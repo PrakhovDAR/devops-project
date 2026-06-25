@@ -1,0 +1,22 @@
+FROM ubuntu:22.04
+
+ARG PYTHON3_VERSION=3.10.6-1~22.04.1
+ARG PYTHON3_PIP_VERSION=22.0.2+dfsg-1ubuntu0.7
+ARG OPENSSH_SERVER_VERSION=1:8.9p1-3ubuntu0.15
+ARG CA_CERTIFICATES_VERSION=20240203~22.04.1
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends python3=${PYTHON3_VERSION} python3-pip=${PYTHON3_PIP_VERSION} openssh-server=${OPENSSH_SERVER_VERSION} ca-certificates=${CA_CERTIFICATES_VERSION} && mkdir -p /var/run/sshd /opt/project /opt/tester/logs /home/devops/.ssh && useradd -m -s /bin/bash devops && chown -R devops:devops /home/devops /opt/project /opt/tester && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/project
+COPY requirements_tester.txt /opt/project/requirements_tester.txt
+RUN pip3 install --no-cache-dir -r requirements_tester.txt
+COPY app /opt/project/app/
+COPY tester /opt/project/tester/
+COPY scripts/start_tester.sh /usr/local/bin/start_tester.sh
+RUN chmod 755 /usr/local/bin/start_tester.sh && chown -R devops:devops /opt/project /opt/tester
+
+CMD ["/usr/local/bin/start_tester.sh"]

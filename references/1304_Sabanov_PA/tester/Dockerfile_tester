@@ -1,0 +1,36 @@
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /opt/tester
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ca-certificates=20240203~22.04.1 \
+	git=1:2.34.1-1ubuntu1.17 \
+	patch=2.7.6-7build2 \
+	python3=3.10.6-1~22.04.1 \
+	python3-pip=22.0.2+dfsg-1ubuntu0.7 \
+	openssh-server=1:8.9p1-3ubuntu0.15 \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir \
+	yapf==0.32.0 \
+	pylint==2.15.0 \
+	requests==2.32.3
+
+COPY app/app_patch.diff /opt/app_patch.diff
+COPY tester/scripts/ /opt/project/scripts/
+
+COPY tester/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh \
+	&& useradd -m -s /bin/bash tester \
+	&& git clone --depth 1 https://github.com/moevm/devops-examples.git /tmp/devops-examples && \
+	cd /tmp/devops-examples && \
+	patch -p1 < /opt/app_patch.diff && \
+	mkdir -p /opt/project/EXAMPLE_APP && \
+	cp -r EXAMPLE_APP/. /opt/project/EXAMPLE_APP/ && \
+	rm -rf /tmp/devops-examples /opt/app_patch.diff
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["python3", "-m", "http.server", "3000", "--directory", "/opt/project"]

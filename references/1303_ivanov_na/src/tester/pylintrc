@@ -1,0 +1,9 @@
+[MAIN]
+py-version=3.10
+
+[MESSAGES CONTROL]
+disable=all
+enable=missing-module-docstring,missing-function-docstring,invalid-name,dangerous-default-value,unused-variable,singleton-comparison,bare-except,consider-using-with,unspecified-encoding,unreachable
+
+[REPORTS]
+score=no

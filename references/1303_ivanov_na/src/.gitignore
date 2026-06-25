@@ -1,0 +1,7 @@
+logs/
+uploads/
+tmp/
+rendered_report/
+__pycache__/
+*.pyc
+.env

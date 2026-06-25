@@ -1,0 +1,37 @@
+﻿version: "2.4"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile_app
+    env_file:
+      - .env
+    environment:
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5000
+      UPLOAD_DIR: /opt/app/uploads
+    ports:
+      - "127.0.0.1:${APP_SSH_PORT:-2222}:22"
+    mem_limit: ${APP_MEMORY_LIMIT:-170m}
+
+  tester:
+    build:
+      context: .
+      dockerfile: Dockerfile_tester
+    env_file:
+      - .env
+    environment:
+      APP_URL: http://app:5000
+      TEST_STAGES: ${TEST_STAGES:-html,pylint,integration}
+      UPLOAD_FILE_NAME: ${UPLOAD_FILE_NAME:-variant7.txt}
+      LOG_STDOUT: /opt/tester/logs/stdout.log
+      LOG_STDERR: /opt/tester/logs/stderr.log
+    ports:
+      - "127.0.0.1:${TESTER_SSH_PORT:-2223}:22"
+    volumes:
+      - ./logs:/opt/tester/logs
+    depends_on:
+      - app
+    mem_limit: ${TESTER_MEMORY_LIMIT:-170m}
+
