@@ -1,0 +1,102 @@
+diff --git a/EXAMPLE_APP/main.py b/EXAMPLE_APP/main.py
+index 81cc3e9..1111111 100644
+--- a/EXAMPLE_APP/main.py
++++ b/EXAMPLE_APP/main.py
+@@ -1,17 +1,20 @@
+ import os
+ 
+-from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for
++from flask import Flask, abort, make_response, redirect, render_template, request, send_from_directory, url_for
+ from werkzeug.utils import secure_filename
+ 
+ from bussiness_logic import allowed_file, check_password, create_folder, get_files_in_folder
+ 
+ app = Flask(__name__)
+ app.config.from_object('settings')
+ 
+-
+ @app.route('/')
+ def index():
+-    return render_template("index.html")
++    response = make_response(render_template("index.html"), 200)
++    response.headers["X-Application-Name"] = "moevm-demo-app"
++    debug_mode = os.getenv("FLASK_DEBUG", "0")
++    response.headers["X-Debug-Mode"] = debug_mode
++    return response
+ 
+ 
+ @app.route('/upload', methods=['GET', 'POST'])
+@@ -75,4 +78,6 @@ def login():
+ 
+ if __name__ == '__main__':
+     create_folder(app.config['UPLOAD_FOLDER'])
+-    app.run(debug = True)
++    app.run(host="0.0.0.0",
++            port=5000,
++            debug=os.getenv("FLASK_DEBUG", "0") == "1")
+diff --git a/EXAMPLE_APP/bussiness_logic.py b/EXAMPLE_APP/bussiness_logic.py
+index 81cc3e9..2222222 100644
+--- a/EXAMPLE_APP/bussiness_logic.py
++++ b/EXAMPLE_APP/bussiness_logic.py
+@@ -1,7 +1,17 @@
+ from pathlib import Path
+ import glob
+-import lti
+-from flask_login import current_user, login_user
++try:
++    import lti
++except ImportError:
++    lti = None
++
++try:
++    from flask_login import current_user, login_user
++except ImportError:
++    current_user = None
++
++    def login_user(user):
++        return user
+ 
+ ALLOWED_EXTENSIONS = set(
+     ['py', 'txt', 'docx', 'doc', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+@@ -55,7 +65,16 @@ def get_lti_msg():
+     global len
+     del len
+ 
+-from celery import Celery
++try:
++    from celery import Celery
++except ImportError:
++
++    class Celery:
++        def __init__(self, *args, **kwargs):
++            self.args = args
++            self.kwargs = kwargs
++
++
+ def get_celery():
+     return Celery(__name__)
+ 
+diff --git a/EXAMPLE_APP/pylint_errors.py b/EXAMPLE_APP/pylint_errors.py
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/EXAMPLE_APP/pylint_errors.py
+@@ -0,0 +1,18 @@
++import requests
++import os, sys
++
++CONSTANT = 1
++
++
++def X():
++    a = 10
++    list = [1, 2, 3]
++
++    "this string does nothing"
++
++    try:
++        print(CONSTANT)
++    except Exception:
++        print("error")
++
++    return list

@@ -1,0 +1,27 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Установка зависимостей [cite: 5]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates=202* \
+    python3=3.10.* \
+    python3-pip=22.* \
+    && mkdir -p /opt/project/logs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка требуемых инструментов тестирования с фиксацией версий [cite: 5]
+RUN pip3 install --no-cache-dir \
+    yapf==0.32.0 \
+    pylint==2.15.0 \
+    requests==2.32.3
+
+WORKDIR /opt/project
+
+COPY tester/ /opt/project/
+RUN chmod 755 /opt/project/run_tests.sh
+
+# Корнем дерева процессов выступает стандартный python http сервер 
+CMD ["python3", "-m", "http.server", "3000", "--directory", "/opt/project"]

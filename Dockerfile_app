@@ -1,0 +1,40 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates=202* \
+    git=1:2.34.* \
+    patch=2.7.* \
+    python3=3.10.* \
+    python3-pip=22.* \
+    openssh-server=1:8.9* \
+    && mkdir -p /var/run/sshd /root/.ssh /app \
+    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY app_patch.diff /opt/app_patch.diff
+
+RUN git clone --depth 1 https://github.com/moevm/devops-examples.git /tmp/devops-examples && \
+    cd /tmp/devops-examples && \
+    sed -i 's/\r$//' /opt/app_patch.diff && \
+    patch -p1 -l < /opt/app_patch.diff && \
+    cp -r EXAMPLE_APP/. /app/ && \
+    rm -rf /tmp/devops-examples /opt/app_patch.diff
+
+WORKDIR /app
+
+# Установка зависимостей приложения [cite: 4]
+RUN pip3 install --no-cache-dir Flask==2.3.3 Werkzeug==2.3.8
+
+COPY id_rsa.pub /root/.ssh/authorized_keys
+COPY start_app.sh /usr/local/bin/start_app.sh
+
+RUN chmod 600 /root/.ssh/authorized_keys && \
+    sed -i 's/\r$//' /usr/local/bin/start_app.sh && \
+    chmod 755 /usr/local/bin/start_app.sh
+
+CMD ["/usr/local/bin/start_app.sh"]

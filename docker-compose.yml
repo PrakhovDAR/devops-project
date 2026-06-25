@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile_app
+    ports:
+      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:2222:22"
+    # Ограничение количества процессов
+    pids_limit: 63
+    restart: unless-stopped
+
+  tester:
+    build:
+      context: .
+      dockerfile: Dockerfile_tester
+    env_file:
+      - .env
+    environment:
+      - TEST_STAGES=${TEST_STAGES:-yapf,pylint,integration}
+      - APP_URL=http://app:5000
+    ports:
+      - "127.0.0.1:3000:3000"
+    # Ограничение количества процессов
+    pids_limit: 63
+    depends_on:
+      - app
