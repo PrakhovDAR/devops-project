@@ -1,0 +1,49 @@
+--- bussiness_logic.py	2026-09-09 00:31:33.132195567 +0300
++++ bussiness_logic_new.py	2026-09-09 00:31:33.157642240 +0300
+@@ -1,7 +1,6 @@
+ from pathlib import Path
+ import glob
+-import lti
+-from flask_login import current_user, login_user
++import os
+ 
+ ALLOWED_EXTENSIONS = set(
+     ['py', 'txt', 'docx', 'doc', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+@@ -10,6 +9,22 @@
+ def check_password(user, password):
+     return user == "admin" and password == "password"
+ 
++
++def create_folder(folder_path):
++    os.makedirs(folder_path, exist_ok=True)
++
++def get_files_in_folder(folder_path):
++    if not os.path.isdir(folder_path):
++        return []
++    return [
++        f for f in os.listdir(folder_path)
++        if os.path.isfile(os.path.join(folder_path, f))
++    ]
++
++def func2(arg1, arg2):
++    return arg1 + arg2
++
++
+ def func7():
+     func5()
+     result = len(range(27))
+@@ -17,12 +32,10 @@
+     return result
+ 
+ def check_login():
+-    if not current_user:
+-        login_user('admin')
++    pass
+ 
+ def func6():
+-    global len
+-    del len
++    pass
+ 
+ def allowed_file(filename):
+     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS

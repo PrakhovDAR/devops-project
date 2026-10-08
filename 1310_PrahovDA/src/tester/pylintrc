@@ -1,0 +1,33 @@
+[MASTER]
+jobs=1
+
+[MESSAGES CONTROL]
+# Enable ONLY the 10 checks that correspond to the 10 intentional errors
+# in src/app/bad_code.py.  All other messages are silenced.
+disable=all
+enable=
+    C0114,
+    C0116,
+    W0611,
+    E0102,
+    W0612,
+    C0103,
+    W0621,
+    R0903,
+    C0301,
+    W0613
+
+[FORMAT]
+# C0301 fires when a line exceeds this limit
+max-line-length=100
+
+[BASIC]
+# Do NOT include single-letter names in good-names so that C0103 fires on `x`
+good-names=i,j,k,_,setUp,tearDown
+
+# Require UPPER_CASE for module-level constants -> 'x = 10' triggers C0103
+const-naming-style=UPPER_CASE
+
+[DESIGN]
+# R0903 fires when a class has fewer than this many public methods
+min-public-methods=2

@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1
+# Minimum Docker version: 19.03.13
+FROM ubuntu:22.04
+
+LABEL maintainer="devops-project"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# ── System dependencies (single layer, pinned versions) ───────────────────
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-server \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /var/run/sshd /root/.ssh && \
+    chmod 700 /root/.ssh && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
+    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    echo "AuthorizedKeysFile .ssh/authorized_keys" >> /etc/ssh/sshd_config && \
+    ssh-keygen -A
+
+WORKDIR /tester
+
+# ── Copy tester source (run_tests.py, pylintrc, tests/) ──────────────────
+COPY tester/ /tester/
+# Copy bad_code.py into the tester so Pylint can analyse it
+COPY app/bad_code.py /tester/bad_code.py
+
+# ── Python dependencies ───────────────────────────────────────────────────
+COPY requirements_tester.txt /tmp/requirements_tester.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements_tester.txt && \
+    rm /tmp/requirements_tester.txt
+
+# ── EXAMPLE_APP source for YAPF analysis (clone same repo) ───────────────
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git patch && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    git clone --depth=1 https://github.com/moevm/devops-examples.git /tmp/devops-src && \
+    mkdir -p /app && \
+    cp -r /tmp/devops-src/EXAMPLE_APP/. /app/ && \
+    rm -rf /tmp/devops-src
+
+COPY app/app.patch /tmp/app.patch
+RUN patch -p0 -d /app < /tmp/app.patch && rm /tmp/app.patch
+
+# ── Entrypoint script ─────────────────────────────────────────────────────
+COPY scripts/start_tester.sh /usr/local/bin/start_tester.sh
+RUN sed -i 's/\r//' /usr/local/bin/start_tester.sh && \
+    chmod +x /usr/local/bin/start_tester.sh
+
+ENV APP_SRC_DIR=/app
+
+CMD ["/usr/local/bin/start_tester.sh"]
