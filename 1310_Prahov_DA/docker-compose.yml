@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: app
+      dockerfile: Dockerfile_app
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:2222:22"
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+
+  tester:
+    build:
+      context: tester
+      dockerfile: Dockerfile_tester
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:3333:22"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+
+networks:
+    app_network:
+        driver: bridge

@@ -1,0 +1,35 @@
+FROM ubuntu:22.04
+
+#Обновления 
+RUN apt-get update && apt-get install -y \
+        git=1:2.34.1-1ubuntu1.18 \
+        python3=3.10.6-1~22.04.1 \
+        python3-pip=22.0.2+dfsg-1ubuntu0.7 \
+        patch=2.7.6-7build2 \
+        openssh-server=1:8.9p1-3ubuntu0.18 && \
+# Удалить скачанные файлы после обновления для экономии места
+    rm -rf /var/lib/apt/lists/* && \
+#Настраиваем SSH
+    mkdir -p /var/run/sshd && \
+    echo "PermitRootLogin prohibit-password" >> /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication no" >> /etc/ssh/sshd_config && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
+    ssh-keygen -A && \
+# Загружаем приложение из репозитория
+    git clone https://github.com/moevm/devops-examples.git && \
+    mv /devops-examples/EXAMPLE_APP /app && \
+    rm -rf /devops-examples
+
+WORKDIR /app
+
+COPY app_rsa.pub /temp/app_rsa.pub
+RUN mkdir -p /root/.ssh && \
+    cat /temp/app_rsa.pub >> /root/.ssh/authorized_keys && \
+    chmod 700 /root/.ssh && \
+    chmod 600 /root/.ssh/authorized_keys && \
+    rm -rf /temp
+
+COPY entrypoint.sh requirements.txt /app/
+RUN pip install -r requirements.txt && \
+    chmod +x entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
